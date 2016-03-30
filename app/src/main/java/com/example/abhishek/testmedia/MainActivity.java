@@ -17,6 +17,9 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
 import android.widget.VideoView;
 
 
@@ -35,6 +38,7 @@ import com.google.android.exoplayer.upstream.DefaultUriDataSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, ExoPlayer.Listener {
@@ -94,18 +98,66 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         } catch (IOException e) {
             e.printStackTrace();
         }
-        //String path = "/sdcard/WhatsApp/Media/WhatsApp Video/VID-20130421-WA0000.mp4";
-        Object paths[] = allMedia.toArray();
+        final Object paths[] = allMedia.toArray();
+        String[] stringArray = getFileNames(paths);// Arrays.copyOf(paths, paths.length, String[].class);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1, android.R.id.text1,stringArray);
+        ListView listView = (ListView) findViewById(R.id.videoList);
+        listView.setAdapter(arrayAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                String loc = (String)paths[position];
+                if (player != null) {
+                    player.stop();
+                    player.release();
+                }
+                playVid(loc);
+            }
+        });
         String path = (String) paths[0];
         try {
-//            mMediaPlayer.setDataSource(path);
-//            mMediaPlayer.setDisplay(holder);
-//            mMediaPlayer.prepare();
-//            mMediaPlayer.start();
+
             File file = new File(path);
             Uri uri = Uri.fromFile(file);
             Allocator allocator = new DefaultAllocator(4096);
            // DataSource dataSource = new DefaultUriDataSource(this, null, "test");
+            DataSource dataSource = new StreamDataSource(new File(path).getAbsolutePath(),4096);
+            ExtractorSampleSource sampleSource = new ExtractorSampleSource(
+                    uri, dataSource, allocator, 4096*64);
+            MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(
+                    this, sampleSource, MediaCodecSelector.DEFAULT, MediaCodec.VIDEO_SCALING_MODE_SCALE_TO_FIT);
+            MediaCodecAudioTrackRenderer audioRenderer = new MediaCodecAudioTrackRenderer(
+                    sampleSource, MediaCodecSelector.DEFAULT);
+            player = ExoPlayer.Factory.newInstance(4,1000,5000);
+            player.prepare(videoRenderer,audioRenderer);
+            player.addListener(this);
+            player.sendMessage(videoRenderer, MediaCodecVideoTrackRenderer.MSG_SET_SURFACE, surface);
+// 5. Start playback.
+            player.setPlayWhenReady(true);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public String[] getFileNames(Object[] objects) {
+        String[] res = new String[objects.length];
+        int i = 0;
+        for (Object item:
+             objects) {
+            String tmp = (String)item;
+            tmp = new File(tmp).getName();
+            res[i] = tmp;
+            i++;
+        }
+        return res;
+    }
+    public void playVid(String path) {
+        try {
+
+            File file = new File(path);
+            Uri uri = Uri.fromFile(file);
+            Allocator allocator = new DefaultAllocator(4096);
+            // DataSource dataSource = new DefaultUriDataSource(this, null, "test");
             DataSource dataSource = new StreamDataSource(new File(path).getAbsolutePath(),4096);
             ExtractorSampleSource sampleSource = new ExtractorSampleSource(
                     uri, dataSource, allocator, 4096*64);
@@ -133,6 +185,14 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     public void surfaceDestroyed(SurfaceHolder holder) {
         player.stop();
         player.release();
+    }
+
+    @Override
+    protected void onStop() {
+        if (player != null) {
+            player.release();
+        }
+        super.onStop();
     }
 
     @Override

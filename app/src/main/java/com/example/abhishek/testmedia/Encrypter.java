@@ -80,6 +80,7 @@ public class Encrypter {
                         filesEncrypted = new HashSet<String>();
                     }
                     filesEncrypted.add(file.getAbsolutePath());
+                    //file.delete();
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (KeyChainException e) {
@@ -116,7 +117,7 @@ public class Encrypter {
         int i = path.lastIndexOf('.');
         if (i > 0) {
             extension = path.substring(i);
-            fname = path.substring(0,i)+token+extension;
+            fname = path.substring(0,i)+token;
         } else {
             fname = path+token;
         }
@@ -148,7 +149,7 @@ public class Encrypter {
         fis.close();
         cryptoCipherOutputStream.close();
         plainfileStream.close();
-        //file.delete();
+        file.delete();
     }
 
     public boolean IsInitialized() {
