@@ -25,7 +25,7 @@ public class StreamDataSource implements DataSource {
     private long readBytes;
     private InputStream stream;
 
-    private String path;
+    //private String path;
     private String baseFileName;
     private RandomAccessFile file;
 
@@ -35,15 +35,15 @@ public class StreamDataSource implements DataSource {
     private long nextReadPos;
     private byte[] decryptedBuffer;
 
-    public StreamDataSource(String path, String fileName, int encryptedBlockSize) {
-        this.path = path;
+    public StreamDataSource(String fileName, int encryptedBlockSize) {
+        //this.path = path;
         baseFileName = fileName;
         readBytes = 0;
         this.encryptedBlockSize = encryptedBlockSize;
         nextReadPos = 0;
         Encrypter enc = Encrypter.GetInstance();
         try {
-            InputStream inputStream = enc.GetDecryptedBlockData(path,fileName,encryptedBlockSize);
+            InputStream inputStream = enc.GetDecryptedBlockData(fileName,encryptedBlockSize);
             //decryptedBuffer = new byte[encryptedBlockSize];
             int read;
             byte[] buffer = new byte[1024];
@@ -69,7 +69,8 @@ public class StreamDataSource implements DataSource {
 
         try {
             long totalFileSize;
-            RandomAccessFile file2 = new RandomAccessFile(path+File.separator+"1_"+baseFileName, "r");
+            String file2Path = Encrypter.GetInstance().GetEditedFileName( new File(baseFileName), "_1");
+            RandomAccessFile file2 = new RandomAccessFile(file2Path, "r");
             totalFileSize = encryptedBlockSize + file2.length();
             nextReadPos = dataSpec.position;
 //            if (nextReadPos < encryptedBlockSize) {
@@ -116,7 +117,8 @@ public class StreamDataSource implements DataSource {
                     //stream.close();
                 }
                 else if (nextReadPos >= encryptedBlockSize) {
-                    RandomAccessFile file = new RandomAccessFile(path+File.separator+"1_"+baseFileName, "r");
+                    String file2Path = Encrypter.GetInstance().GetEditedFileName(new File(baseFileName), "_1");
+                    RandomAccessFile file = new RandomAccessFile(file2Path, "r");
                     file.seek(nextReadPos - encryptedBlockSize);
                     bytesRead = file.read(buffer, offset, (int) Math.min(bytesRemaining, readLength));
                     file.close();
@@ -134,7 +136,8 @@ public class StreamDataSource implements DataSource {
                     //stream.close();
                     if ( bytesRead < readLength) {
                         int bytesLeft = readLength - bytesRead;
-                        RandomAccessFile file = new RandomAccessFile(path+File.separator+"1_"+baseFileName, "r");
+                        String file2Path = Encrypter.GetInstance().GetEditedFileName(new File(baseFileName), "_1");
+                        RandomAccessFile file = new RandomAccessFile(file2Path, "r");
                         file.seek(0);
                         bytesRead += file.read(buffer, offset+bytesRead, (int) Math.min(bytesRemaining, bytesLeft));
                         file.close();

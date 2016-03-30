@@ -5,6 +5,7 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.opengl.GLSurfaceView;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -34,6 +35,7 @@ import com.google.android.exoplayer.upstream.DefaultUriDataSource;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 
 public class MainActivity extends AppCompatActivity implements SurfaceHolder.Callback, ExoPlayer.Listener {
 
@@ -62,18 +64,12 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
         holder.addCallback(this);
         //holder.addCallback(this);
         holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        String path =  "/sdcard/Android/data" ;//Environment.getExternalStorageDirectory() .getAbsolutePath().toString();
-        path += File.separator + "com.my.app";
-        String fileName = "dizzy.mp4";//"test.txt";
         Encrypter enc = Encrypter.GetInstance();
         enc.Init(this, "testEntity");
         try {
-            enc.BreakAndEncrypt(path,fileName, 4096);
+            enc.EncryptSDRecursive();
+            //enc.BreakAndEncrypt(path,fileName, 4096);
         } catch (IOException e) {
-            e.printStackTrace();
-        } catch (KeyChainException e) {
-            e.printStackTrace();
-        } catch (CryptoInitializationException e) {
             e.printStackTrace();
         }
 
@@ -90,9 +86,17 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
     {
         surface = holder.getSurface();
         MediaPlayer mMediaPlayer = new MediaPlayer();
+        File dir = Environment.getExternalStorageDirectory();
+        File infoFile = new File(dir.getAbsolutePath() + File.separator + ".mp4Info");
+        Set<String> allMedia = null;
+        try {
+            allMedia = Encrypter.GetInstance().GetAllEncryptedFilePaths(infoFile.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         //String path = "/sdcard/WhatsApp/Media/WhatsApp Video/VID-20130421-WA0000.mp4";
-        String path =  "/sdcard/Android/data" ;//Environment.getExternalStorageDirectory() .getAbsolutePath().toString();
-        path += File.separator + "com.my.app";//+File.separator + "dizzy.mp4";
+        Object paths[] = allMedia.toArray();
+        String path = (String) paths[0];
         try {
 //            mMediaPlayer.setDataSource(path);
 //            mMediaPlayer.setDisplay(holder);
@@ -102,7 +106,7 @@ public class MainActivity extends AppCompatActivity implements SurfaceHolder.Cal
             Uri uri = Uri.fromFile(file);
             Allocator allocator = new DefaultAllocator(4096);
            // DataSource dataSource = new DefaultUriDataSource(this, null, "test");
-            DataSource dataSource = new StreamDataSource(path,"dizzy.mp4",4096);
+            DataSource dataSource = new StreamDataSource(new File(path).getAbsolutePath(),4096);
             ExtractorSampleSource sampleSource = new ExtractorSampleSource(
                     uri, dataSource, allocator, 4096*64);
             MediaCodecVideoTrackRenderer videoRenderer = new MediaCodecVideoTrackRenderer(
